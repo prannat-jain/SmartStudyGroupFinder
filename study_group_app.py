@@ -6,14 +6,9 @@ from sklearn.cluster import KMeans
 from sklearn.preprocessing import StandardScaler
 
 
-# ------------------------
 # 1. DATABASE SETUP
-# ------------------------
 def init_db():
-    """
-    Initialize a SQLite database with a 'students' table
-    if it does not exist already.
-    """
+
     conn = sqlite3.connect("study_groups.db")
     cursor = conn.cursor()
 
@@ -32,9 +27,6 @@ def init_db():
 
 
 def insert_student(name, gpa, availability_str, subjects_str, cursor, conn):
-    """
-    Insert a single student record into the 'students' table.
-    """
     cursor.execute("""
         INSERT INTO students (name, gpa, availability, subjects)
         VALUES (?, ?, ?, ?)
@@ -43,17 +35,12 @@ def insert_student(name, gpa, availability_str, subjects_str, cursor, conn):
 
 
 def fetch_all_students(cursor):
-    """
-    Fetch all rows (name, gpa, availability, subjects) from the 'students' table.
-    """
     cursor.execute("SELECT name, gpa, availability, subjects FROM students")
     rows = cursor.fetchall()
     return rows
 
 
-# ------------------------
 # 2. HELPER FUNCTIONS
-# ------------------------
 def convert_availability_to_vector(avail_list):
     """
     Convert a list of day-strings (e.g. ["Mon","Wed"]) to a 7-dimensional binary vector.
@@ -63,27 +50,17 @@ def convert_availability_to_vector(avail_list):
 
 
 def convert_subjects_to_vector(subject_list):
-    """
-    Convert a list of subjects to a binary vector.
-    Example subjects: ["Algorithms", "Data Structures", "Calculus", "Physics"].
-    """
     all_subjects = ["Algorithms", "Data Structures", "Calculus", "Physics"]
     return [1 if subj in subject_list else 0 for subj in all_subjects]
 
 
 def parse_csv_string(csv_string):
-    """
-    Convert a comma-separated string (e.g. "Mon,Wed") back into a list ["Mon","Wed"].
-    Handle empty strings safely.
-    """
     if not csv_string:
         return []
     return csv_string.split(",")
 
 
-# ------------------------
-# 3. STREAMLIT UI / LOGIC
-# ------------------------
+# 3.STREAMLIT UI/LOGIC
 def main():
     # Configure the Streamlit page
     st.set_page_config(
@@ -92,16 +69,15 @@ def main():
         layout="wide"
     )
 
-    # Initialize or connect to the SQLite database
+    #initialize or connect to the SQLite database
     conn, cursor = init_db()
 
-    st.title("Smart Study Group Finder (SQLite Version)")
+    st.title("Smart Study Group Finder")
     st.markdown("""
-    This application stores student data in a local SQLite database. 
     Submit your info, then form groups based on availability, subjects, and GPA.
     """)
 
-    # Sidebar for extra controls
+    #sidebar for extra controls
     st.sidebar.header("Database Info")
     if st.sidebar.button("Show All Records in DB"):
         rows = fetch_all_students(cursor)
@@ -128,11 +104,11 @@ def main():
             if not name.strip():
                 st.error("Name cannot be empty.")
             else:
-                # Convert lists to comma-separated strings
+                #convert lists to comma-separated strings
                 availability_str = ",".join(availability)
                 subjects_str = ",".join(subjects)
 
-                # Insert into DB
+                #insert into DB
                 insert_student(name.strip(), gpa, availability_str, subjects_str, cursor, conn)
                 st.success(f"Data for '{name}' submitted to database!")
 
@@ -146,7 +122,7 @@ def main():
             st.warning("Need at least 2 students in the database to form groups.")
             return
 
-        # Prepare data for clustering
+        #prepare data for clustering
         names = []
         feature_vectors = []
         for (name_db, gpa_db, avail_db, subj_db) in rows:
@@ -160,21 +136,21 @@ def main():
             names.append(name_db)
             feature_vectors.append(data_vector)
 
-        # Convert to numpy array
+        #convert to numpy array
         X = np.array(feature_vectors)
 
-        # Scale the data
+        #scale the data
         scaler = StandardScaler()
         X_scaled = scaler.fit_transform(X)
 
-        # Prompt user for number of clusters
+        #prompt user for number of clusters
         k = st.slider("Number of Groups (Clusters)", 2, 10, 3)
 
-        # K-Means clustering
+        #k-Means clustering
         kmeans = KMeans(n_clusters=k, random_state=42)
         labels = kmeans.fit_predict(X_scaled)
 
-        # Display results
+        #display results
         st.subheader("Study Groups")
         groups = {}
         for i, label in enumerate(labels):
