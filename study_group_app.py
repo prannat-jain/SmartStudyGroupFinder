@@ -8,7 +8,6 @@ from sklearn.preprocessing import StandardScaler
 
 # 1. DATABASE SETUP
 def init_db():
-
     conn = sqlite3.connect("study_groups.db")
     cursor = conn.cursor()
 
@@ -69,7 +68,7 @@ def main():
         layout="wide"
     )
 
-    #initialize or connect to the SQLite database
+    # initialize or connect to the SQLite database
     conn, cursor = init_db()
 
     st.title("Smart Study Group Finder")
@@ -77,7 +76,7 @@ def main():
     Submit your info, then form groups based on availability, subjects, and GPA.
     """)
 
-    #sidebar for extra controls
+    # sidebar for extra controls
     st.sidebar.header("Database Info")
     if st.sidebar.button("Show All Records in DB"):
         rows = fetch_all_students(cursor)
@@ -88,7 +87,7 @@ def main():
     # ----------- COLLECT STUDENT DATA -----------
     with st.form("student_form", clear_on_submit=True):
         st.subheader("Enter Your Study Preferences")
-        name = st.text_input("Name", placeholder="e.g., Alice Chen")
+        name = st.text_input("Name", placeholder="e.g., Jane Doe")
         gpa = st.number_input("GPA (2.0 to 4.0)", 2.0, 4.0, step=0.1)
         availability = st.multiselect(
             "Availability (select days)",
@@ -96,7 +95,69 @@ def main():
         )
         subjects = st.multiselect(
             "Preferred Subjects",
-            ["Algorithms", "Data Structures", "Calculus", "Physics"]
+            ["Accounting",
+             "Aerospace Engineering",
+             "African Studies",
+             "Anthropology",
+             "Archaeology",
+             "Architecture",
+             "Art History",
+             "Astronomy",
+             "Biochemistry",
+             "Bioengineering",
+             "Biology",
+             "Biomedical Engineering",
+             "Business Administration",
+             "Chemical Engineering",
+             "Chemistry",
+             "Civil Engineering",
+             "Classics",
+             "Communication",
+             "Comparative Literature",
+             "Computer Science",
+             "Criminal Justice",
+             "Data Science",
+             "Earth Sciences",
+             "Economics",
+             "Education",
+             "Electrical Engineering",
+             "English Literature",
+             "Environmental Science",
+             "Film Studies",
+             "Finance",
+             "Fine Arts",
+             "Foreign Languages",
+             "Gender Studies",
+             "Geography",
+             "Geology",
+             "Graphic Design",
+             "Health Sciences",
+             "History",
+             "Industrial Engineering",
+             "Information Systems",
+             "International Relations",
+             "Journalism",
+             "Law",
+             "Management",
+             "Marketing",
+             "Materials Science",
+             "Mathematics",
+             "Mechanical Engineering",
+             "Medicine (Pre-Med)",
+             "Music",
+             "Neuroscience",
+             "Nursing",
+             "Nutrition",
+             "Philosophy",
+             "Physics",
+             "Political Science",
+             "Psychology",
+             "Public Health",
+             "Religious Studies",
+             "Sociology",
+             "Statistics",
+             "Theater",
+             "Urban Studies"]
         )
 
         submitted = st.form_submit_button("Submit Data")
@@ -104,11 +165,11 @@ def main():
             if not name.strip():
                 st.error("Name cannot be empty.")
             else:
-                #convert lists to comma-separated strings
+                # convert lists to comma-separated strings
                 availability_str = ",".join(availability)
                 subjects_str = ",".join(subjects)
 
-                #insert into DB
+                # insert into DB
                 insert_student(name.strip(), gpa, availability_str, subjects_str, cursor, conn)
                 st.success(f"Data for '{name}' submitted to database!")
 
@@ -122,7 +183,7 @@ def main():
             st.warning("Need at least 2 students in the database to form groups.")
             return
 
-        #prepare data for clustering
+        # prepare data for clustering
         names = []
         feature_vectors = []
         for (name_db, gpa_db, avail_db, subj_db) in rows:
@@ -136,21 +197,21 @@ def main():
             names.append(name_db)
             feature_vectors.append(data_vector)
 
-        #convert to numpy array
+        # convert to numpy array
         X = np.array(feature_vectors)
 
-        #scale the data
+        # scale the data
         scaler = StandardScaler()
         X_scaled = scaler.fit_transform(X)
 
-        #prompt user for number of clusters
+        # prompt user for number of clusters
         k = st.slider("Number of Groups (Clusters)", 2, 10, 3)
 
-        #k-Means clustering
+        # k-Means clustering
         kmeans = KMeans(n_clusters=k, random_state=42)
         labels = kmeans.fit_predict(X_scaled)
 
-        #display results
+        # display results
         st.subheader("Study Groups")
         groups = {}
         for i, label in enumerate(labels):
