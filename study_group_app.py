@@ -58,6 +58,31 @@ def parse_csv_string(csv_string):
         return []
     return csv_string.split(",")
 
+# 1. Define helper functions at the top of your code
+def intersection_of_days(list_of_day_lists):
+    if not list_of_day_lists:
+        return []
+    common_days = set(list_of_day_lists[0])
+    for dl in list_of_day_lists[1:]:
+        common_days = common_days.intersection(dl)
+    return sorted(common_days)
+
+def union_of_subjects(list_of_subject_lists):
+    all_subjs = set()
+    for sl in list_of_subject_lists:
+        all_subjs.update(sl)
+    return sorted(all_subjs)
+
+def get_student_info_by_name(cursor, name):
+    cursor.execute("SELECT availability, subjects FROM students WHERE name = ?", (name,))
+    row = cursor.fetchone()
+    if row is None:
+        return [], []
+    availability_str, subjects_str = row
+    availability_list = availability_str.split(",") if availability_str else []
+    subjects_list = subjects_str.split(",") if subjects_str else []
+    return availability_list, subjects_list
+
 
 # 3.STREAMLIT UI/LOGIC
 def main():
@@ -217,9 +242,29 @@ def main():
         for i, label in enumerate(labels):
             groups.setdefault(label, []).append(names[i])
 
+        # 2. After you've computed 'groups' from K-Means:
         for cluster_id, members in groups.items():
-            st.markdown(f"**Group {cluster_id + 1}**")
-            st.write(", ".join(members))
+            st.markdown(f"### Group {cluster_id + 1}")
+
+            # Show member names
+            st.write("Members: " + ", ".join(members))
+
+            # Gather availability/subjects
+            group_avail_lists = []
+            group_subject_lists = []
+
+            for member_name in members:
+                availability_list, subjects_list = get_student_info_by_name(cursor, member_name)
+                group_avail_lists.append(availability_list)
+                group_subject_lists.append(subjects_list)
+
+            # Intersection of days & union of subjects
+            common_days = intersection_of_days(group_avail_lists)
+            combined_subjects = union_of_subjects(group_subject_lists)
+
+            st.write(f"**Common Availability:** {', '.join(common_days) if common_days else 'None'}")
+            st.write(f"**All Subjects in Group:** {', '.join(combined_subjects) if combined_subjects else 'None'}")
+            st.write("---")
 
     # Close DB connection when app finishes
     # (Streamlit will rerun the script frequently, so usually we keep it open
